@@ -100,25 +100,51 @@ class MockInterviewGenerator:
         
         print(f"🔍 Researching {company_name}...")
         
-        # Perform web search
-        company_info = self.web_search.search_company(company_name)
-        position_info = self.web_search.search_position(position, company_name)
-        
-        research_data = {
-            "overview": company_info.get("overview", ""),
-            "culture": company_info.get("culture", ""),
-            "news": company_info.get("news", ""),
-            "position_analysis": position_info.get("position_info", ""),
-            "similar_positions": position_info.get("similar_positions", "")
-        }
-        
-        # Cache the research
-        self.research_cache.add_research(company_name, research_data)
-        
-        print(f"✅ Research completed and cached")
-        
-        return research_data
-    
+        # Perform comprehensive web search with new method names
+        try:
+            overview = self.web_search.search_company_overview(company_name)
+            culture = self.web_search.search_company_culture(company_name)
+            news = self.web_search.search_recent_news(company_name, days=180)
+            position_insights = self.web_search.search_position_insights(company_name, position)
+            
+            research_data = {
+                "company_name": company_name,
+                "position": position,
+                "overview": overview.get("summary", ""),
+                "overview_sources": overview.get("sources", []),
+                "culture": culture.get("summary", ""),
+                "culture_sources": culture.get("sources", []),
+                "news": news.get("summary", ""),
+                "news_sources": news.get("sources", []),
+                "position_analysis": position_insights.get("summary", ""),
+                "position_sources": position_insights.get("sources", []),
+                "research_timestamp": datetime.now().isoformat()
+            }
+            
+            # Cache the research
+            self.research_cache.save_research(company_name, research_data)
+            
+            print(f"✅ Research completed and cached")
+            
+            return research_data
+            
+        except Exception as e:
+            print(f"❌ Research error: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            return {
+                "company_name": company_name,
+                "position": position,
+                "overview": f"Error researching {company_name}: {str(e)}",
+                "culture": "",
+                "news": "",
+                "position_analysis": "",
+                "overview_sources": [],
+                "culture_sources": [],
+                "news_sources": [],
+                "position_sources": []
+            }
     def _generate_questions(
         self,
         company_name: str,
